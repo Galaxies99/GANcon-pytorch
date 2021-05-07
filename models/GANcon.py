@@ -40,11 +40,7 @@ class GeneratorEncoder(nn.Module):
 class GeneratorDecoder(nn.Module):
     def __init__(self, in_channel):
         super(GeneratorDecoder, self).__init__()
-        self.up_sampling = nn.Sequential(
-            nn.Upsample(size = 2),
-            nn.ZeroPad2d([0, 1, 0, 1]),
-            nn.Conv2d(in_channel, in_channel, kernel_size = 2, stride = 1)
-        )
+        self.up_sampling = nn.ConvTranspose2d(in_channel, in_channel, kernel_size = 2, stride = 2)
         self.middle_layer = nn.Sequential(
             nn.Conv2d(in_channel + in_channel, in_channel, kernel_size = 3, stride = 1, padding = 1),
             nn.ReLU(inplace = True)
@@ -88,7 +84,7 @@ class ContactMapGenerator(nn.Module):
             nn.Softmax(dim = 1)
         )
     
-    def forward(x):
+    def forward(self, x):
         # x: n * 441 * L * L
         # skip1: n * 441 * L * L
         # x1: n * 441 * (L / 2) * (L / 2)
@@ -138,8 +134,7 @@ class ContactMapDiscriminator(nn.Module):
             nn.Sigmoid()
         )
     
-    def forward(self, feature, contact_map, mask):
-        contact_map = contact_map * mask
+    def forward(self, feature, contact_map):
         x = torch.cat([feature, contact_map], dim = 1)
         x = self.conv1(x)
         x = self.conv2(x)

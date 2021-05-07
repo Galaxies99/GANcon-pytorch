@@ -45,7 +45,8 @@ class ProteinDataset(Dataset):
         return feature.astype(np.float32), label.astype(np.int), mask.astype(np.bool)
 
     def __len__(self):
-        return len(self.proteins)
+        # return len(self.proteins)
+        return 1
 
     def get_label(self, name):
         tmp_label = np.load(name)
@@ -66,6 +67,7 @@ class ProteinDataset(Dataset):
 def collate_fn(data):
     assert len(data) > 0
     max_m = np.max([x.shape[1] for (x, _, _) in data])
+    max_m = (np.ceil(max_m / 16) * 16).astype(np.int)   # To ensure that L has a factor of 16
     batch_size = len(data)
     channel_size = data[0][0].shape[0]
 

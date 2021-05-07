@@ -1,12 +1,21 @@
-batch_size: 4
 multigpu: False
 max_epoch: 30
-adam_beta1: 0.9
-adam_beta2: 0.999
-learning_rate: 0.05
-milestones: [5, 10, 15, 20, 25, 30]
-gamma: 0.1
 checkpoint_dir: 'checkpoint'
-network:
+generator:
+  batch_size: 1
   input_channel: 441
   output_channel: 10
+  dropout_rate: 0.5
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  learning_rate: 0.0001
+  milestones: [5, 10, 15, 20, 25, 30]
+  gamma: 0.1
+discriminator:
+  batch_size: 1
+  input_channel: 451
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  learning_rate: 0.00001
+  milestones: [15, 30, 45, 60, 75, 90]
+  gamma: 0.1
