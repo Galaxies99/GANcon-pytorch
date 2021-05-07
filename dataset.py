@@ -45,8 +45,7 @@ class ProteinDataset(Dataset):
         return feature.astype(np.float32), label.astype(np.int), mask.astype(np.bool)
 
     def __len__(self):
-        # return len(self.proteins)
-        return 1
+        return len(self.proteins)
 
     def get_label(self, name):
         tmp_label = np.load(name)

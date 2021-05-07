@@ -10,13 +10,13 @@ Yang, Hang, et al. "GANcon: protein contact map prediction with deep generative 
 
 ```bibtex
 @article{yang2020gancon,
-  title={GANcon: protein contact map prediction with deep generative adversarial network},
-  author={Yang, Hang and Wang, Minghui and Yu, Zhenhua and Zhao, Xing-Ming and Li, Ao},
-  journal={IEEE Access},
-  volume={8},
-  pages={80899--80907},
-  year={2020},
-  publisher={IEEE}
+  title =        {GANcon: protein contact map prediction with deep generative adversarial network},
+  author =       {Yang, Hang and Wang, Minghui and Yu, Zhenhua and Zhao, Xing-Ming and Li, Ao},
+  journal =      {IEEE Access},
+  volume =       {8},
+  pages =        {80899--80907},
+  year =         {2020},
+  publisher =    {IEEE}
 }
 
 @misc{fang2021gancon,
