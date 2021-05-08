@@ -92,30 +92,30 @@ class ContactMapGenerator(nn.Module):
         )
     
     def forward(self, x):
-        # x: n * 441 * L * L
-        # skip1: n * 441 * L * L
-        # x1: n * 441 * (L / 2) * (L / 2)
+        # x: n * input_channel * L * L
+        # skip1: n * input_channel * L * L
+        # x1: n * input_channel * (L / 2) * (L / 2)
         skip1, x1 = self.encoder1(x)
-        # skip2: n * 441 * (L / 2) * (L / 2)
-        # x2: n * 441 * (L / 4) * (L / 4)
+        # skip2: n * input_channel * (L / 2) * (L / 2)
+        # x2: n * input_channel * (L / 4) * (L / 4)
         skip2, x2 = self.encoder2(x1)
-        # skip3: n * 441 * (L / 4) * (L / 4)
-        # x3: n * 441 * (L / 8) * (L / 8)
+        # skip3: n * input_channel * (L / 4) * (L / 4)
+        # x3: n * input_channel * (L / 8) * (L / 8)
         skip3, x3 = self.encoder3(x2)
-        # skip4: n * 441 * (L / 8) * (L / 8)
-        # x4: n * 441 * (L / 16) * (L / 16)
+        # skip4: n * input_channel * (L / 8) * (L / 8)
+        # x4: n * input_channel * (L / 16) * (L / 16)
         skip4, x4 = self.encoder4(x3)
-        # y0: n * 441 * (L / 16) * (L / 16)
+        # y0: n * input_channel * (L / 16) * (L / 16)
         y0 = self.middle_layer(x4)
-        # y1: n * 441 * (L / 8) * (L / 8)
+        # y1: n * input_channel * (L / 8) * (L / 8)
         y1 = self.decoder1(y0, skip4)
-        # y2: n * 441 * (L / 4) * (L / 4)
+        # y2: n * input_channel * (L / 4) * (L / 4)
         y2 = self.decoder2(y1, skip3)
-        # y3: n * 441 * (L / 2) * (L / 2)
+        # y3: n * input_channel * (L / 2) * (L / 2)
         y3 = self.decoder3(y2, skip2)
-        # y4: n * 441 * L * L
+        # y4: n * input_channel * L * L
         y4 = self.decoder4(y3, skip1)
-        # res: n * 10 * L * L
+        # res: n * output_channel * L * L
         res = self.final(y4)
         return res
         
