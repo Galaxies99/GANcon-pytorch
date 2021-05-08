@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
+import numpy as np
+
 
 class MaskedCrossEntropyLoss(nn.Module):
     def __init__(self, with_softmax = True):
@@ -22,23 +25,21 @@ class MaskedCrossEntropyLoss(nn.Module):
 
 
 class MaskedFocalLoss(nn.Module):
-    def __init__(self, alpha, gamma = 2.0, with_softmax = True):
+    def __init__(self, alpha, gamma = 2.0):
         super(MaskedFocalLoss, self).__init__()
-        self.with_softmax = with_softmax
-        self.alpha = alpha
+        self.alpha = torch.from_numpy(np.array(alpha))
         self.gamma = gamma
-        if self.with_softmax:
-            self.cross_entropy = nn.CrossEntropyLoss(reduction = 'none')
-        else:
-            self.cross_entropy = nn.NLLLoss(reduction = 'none')
+        self.cross_entropy = nn.NLLLoss(reduction = 'none')
         
-    def fowrard(self, res, gt, mask):
-        if self.with_softmax is False:
-            res = torch.log(res)
+    def forward(self, res, gt, mask):
+        res = torch.log(res)
+        alpha = self.alpha.to(res.device)
         loss = self.cross_entropy(res, gt.long())
-        pt = torch.exp(loss)
+        pt = torch.exp(- loss)
         loss = loss * mask
-        loss = loss * self.alpha[gt] * torch.pow(1 - pt, self.gamma)
+        alpha = alpha.gather(0, gt.view(-1)).reshape(gt.shape)
+        loss = loss * Variable(alpha)
+        loss = loss * torch.pow(1 - pt, self.gamma)
         sample_loss = loss.sum(dim = [1, 2]) / mask.sum(dim = [1, 2])
         mean_batch_loss = torch.mean(sample_loss)
         return mean_batch_loss
@@ -50,7 +51,7 @@ class MaskedMSELoss(nn.Module):
         self.mse = nn.MSELoss(reduction='none')
 
     def forward(self, res, gt, mask):
-        loss = self.mse(res, F.one_hot(gt, num_classes = 10))
+        loss = self.mse(res, F.one_hot(gt, num_classes = 10).permute(0, 3, 1, 2).type(torch.float))
         loss = loss * mask
         sample_loss = loss.sum(dim = [1, 2]) / mask.sum(dim = [1, 2])
         mean_batch_loss = torch.mean(sample_loss)
@@ -67,7 +68,9 @@ class MaskedSFLoss(nn.Module):
     def forward(self, res, gt, mask):
         loss1 = self.focal(res, gt, mask)
         loss2 = self.mse(res, gt, mask)
-        return self.beta * loss1 + loss2
+        loss = loss1 * self.beta + loss2
+        loss.requires_grad_(True)
+        return loss
 
 
 class DiscriminateLoss(nn.Module):
@@ -92,7 +95,9 @@ class GeneratorLoss(nn.Module):
     def forward(self, prediction, res, gt, mask):
         loss1 = self.discriminate_loss(prediction, mask)
         loss2 = self.sf_loss(res, gt, mask)   
-        return loss1 * self.lambda_ + loss2
+        loss = loss1 * self.lambda_ + loss2
+        loss.requires_grad_(True)
+        return loss
 
 
 class DiscriminatorLoss(nn.Module):

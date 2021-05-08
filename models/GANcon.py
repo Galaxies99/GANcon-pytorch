@@ -6,12 +6,15 @@ import torch.nn.functional as F
 class ResBlock(nn.Module):
     def __init__(self, channel):
         super(ResBlock, self).__init__()
-        self.conv1 = nn.Conv2d(channel, channel, kernel_size = 3, stride = 1, padding = 1)
+        self.residual = nn.Sequential(
+            nn.Conv2d(channel, channel, kernel_size = 3, stride = 1, padding = 1),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(channel, channel, kernel_size = 3, stride = 1, padding = 1)
+        )
         self.relu = nn.ReLU(inplace = True)
-        self.conv2 = nn.Conv2d(channel, channel, kernel_size = 3, stride = 1, padding = 1)
     
     def forward(self, x):
-        y = self.conv2(self.relu(self.conv1(x)))
+        y = self.residual(x)
         return self.relu(x + y)
 
 
@@ -23,7 +26,7 @@ class GeneratorEncoder(nn.Module):
             self.middle_layer = nn.Sequential(
                 nn.Conv2d(in_channel, in_channel, kernel_size = 3, stride = 1, padding = 1),
                 nn.ReLU(inplace = True),
-                nn.Dropout(p = dropout, inplace = True)
+                nn.Dropout(p = dropout, inplace = False)
             )
         else:
             self.middle_layer = nn.Sequential(
@@ -33,8 +36,10 @@ class GeneratorEncoder(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
     
     def forward(self, x):
-        y = self.middle_layer(self.res_block(x))
-        return y, self.pool(y)
+        x = self.res_block(x)
+        x = self.middle_layer(x)
+        y = self.pool(x)
+        return x, y
     
 
 class GeneratorDecoder(nn.Module):
@@ -50,7 +55,9 @@ class GeneratorDecoder(nn.Module):
     def forward(self, x, y):
         x = self.up_sampling(x)
         x = torch.cat([x, y], dim = 1)
-        return self.res_block(self.middle_layer(x))
+        x = self.middle_layer(x)
+        x = self.res_block(x)
+        return x
 
 
 class ContactMapGenerator(nn.Module):

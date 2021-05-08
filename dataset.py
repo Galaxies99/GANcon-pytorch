@@ -46,7 +46,7 @@ class ProteinDataset(Dataset):
 
     def __len__(self):
         return len(self.proteins)
-
+        
     def get_label(self, name):
         tmp_label = np.load(name)
         return tmp_label

@@ -13,7 +13,7 @@ from utils.loss import GeneratorLoss, DiscriminatorLoss
 from torch.optim.lr_scheduler import MultiStepLR
 from dataset import ProteinDataset, collate_fn
 from models.GANcon import ContactMapGenerator, ContactMapDiscriminator
-
+torch.autograd.set_detect_anomaly(True)
 # Parse Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--cfg', default = os.path.join('configs', 'default.yaml'), help = 'Config File', type = str)
@@ -28,6 +28,7 @@ MAX_EPOCH = cfg_dict.get('max_epoch', 30)
 CHECKPOINT_DIR = cfg_dict.get('checkpoint_dir', 'checkpoint')
 GENERATOR = cfg_dict.get('generator', {})
 DISCRIMINATOR = cfg_dict.get('discriminator', {})
+LOSS = cfg_dict.get('loss', {})
 GENERATOR_BATCH_SIZE = GENERATOR.get('batch_size', 1)
 
 # Load data & Build dataset
@@ -47,17 +48,6 @@ val_dataloader = DataLoader(val_dataset, batch_size = GENERATOR_BATCH_SIZE, shuf
 generator = ContactMapGenerator(GENERATOR)
 discriminator = ContactMapDiscriminator(DISCRIMINATOR)
 
-if MULTIGPU is False:
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    generator.to(device)
-    discriminator.to(device)
-else:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cpu'):
-        raise EnvironmentError('No GPUs, cannot initialize multigpu training.')
-    generator.to(device)
-    discriminator.to(device)
-
 # Define optimizer
 generator_beta = (GENERATOR.get('adam_beta1', 0.9), GENERATOR.get('adam_beta2', 0.999))
 generator_learning_rate = GENERATOR.get('learning_rate', 0.01)
@@ -69,7 +59,11 @@ discriminator_optimizer = optim.Adam(discriminator.parameters(),
                                      betas = discriminator_beta, lr = discriminator_learning_rate)
 
 # Define Criterion
-generator_criterion = GeneratorLoss(alpha_ = [0.25, 0.25, 0.25, 0.25, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75], beta_ = 1.0, gamma_ = 2.0, lambda_ = 1.0)
+LOSS_ALPHA = LOSS.get('alpha', [0.25, 0.25, 0.25, 0.25, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
+LOSS_BETA = LOSS.get('beta', 1.0)
+LOSS_GAMMA = LOSS.get('gamma', 2.0)
+LOSS_LAMBDA = LOSS.get('lambda', 1.0)
+generator_criterion = GeneratorLoss(alpha_ = LOSS_ALPHA, beta_ = LOSS_BETA, gamma_ = LOSS_GAMMA, lambda_ = LOSS_LAMBDA)
 discriminator_criterion = DiscriminatorLoss()
 
 # Define Scheduler
@@ -101,6 +95,17 @@ if os.path.isfile(generator_checkpoint_file) and os.path.isfile(discriminator_ch
     start_epoch = G_epoch
 
 # Data Parallelism
+if MULTIGPU is False:
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    generator.to(device)
+    discriminator.to(device)
+else:
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == torch.device('cpu'):
+        raise EnvironmentError('No GPUs, cannot initialize multigpu training.')
+    generator.to(device)
+    discriminator.to(device)
+
 if MULTIGPU is True:
     generator = torch.nn.DataParallel(generator)
     discriminator = torch.nn.DataParallel(discriminator)
@@ -116,7 +121,7 @@ def generator_train_one_epoch():
         mask = mask.to(device)
         result = generator(feature)
         with torch.no_grad():
-            prediction = discriminator(feature, result)
+            prediction = discriminator(feature, result).detach()
         loss = generator_criterion(prediction, result, label, mask)
         loss.backward()
         generator_optimizer.step()
@@ -137,7 +142,7 @@ def generator_eval_one_epoch():
         with torch.no_grad():
             result = generator(feature)
         with torch.no_grad():
-            prediction = discriminator(feature, result)
+            prediction = discriminator(feature, result).detach()
             loss = generator_criterion(prediction, result, label, mask)
         print('--------------- Generator Eval Batch %d ---------------' % (idx + 1))
         print('loss: %.12f' % loss.item())
@@ -156,9 +161,9 @@ def discriminator_train_one_epoch():
         feature = feature.to(device)
         label = label.to(device)
         mask = mask.to(device)
-        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2)
+        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2).type(torch.float)
         with torch.no_grad():
-            fake_label = generator(feature)
+            fake_label = generator(feature).detach()
         real_result = discriminator(feature, real_label)
         fake_result = discriminator(feature, fake_label)
         real_loss = discriminator_criterion(real_result, torch.ones(real_result.shape), mask)
@@ -180,9 +185,9 @@ def discriminator_eval_one_epoch():
         feature = feature.to(device)
         label = label.to(device)
         mask = mask.to(device)
-        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2)
+        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2).type(torch.float)
         with torch.no_grad():
-            fake_label = generator(feature)
+            fake_label = generator(feature).detach()
             real_result = discriminator(feature, real_label)
             fake_result = discriminator(feature, fake_label)
         with torch.no_grad():
@@ -216,14 +221,6 @@ def train(start_epoch, args = {}):
             print('Discriminator mean eval loss: %.12f' % loss)
 
     for epoch in range(start_epoch, MAX_EPOCH):
-        for _ in range(discriminator_training_time_per_epoch):
-            print('**************** Discriminator Epoch %d ****************' % (discriminator_epoch + 1))
-            print('learning rate: %f' % (discriminator_lr_scheduler.get_last_lr()[0]))
-            discriminator_train_one_epoch()
-            loss = discriminator_eval_one_epoch()
-            discriminator_lr_scheduler.step()
-            discriminator_epoch += 1
-            print('Discriminator mean eval loss: %.12f' % loss)
         for _ in range(generator_training_time_per_epoch):
             print('**************** Generator Epoch %d ****************' % (generator_epoch + 1))
             print('learning rate: %f' % (generator_lr_scheduler.get_last_lr()[0]))
@@ -232,6 +229,14 @@ def train(start_epoch, args = {}):
             generator_lr_scheduler.step()
             generator_epoch += 1
             print('Generator mean eval loss: %.12f' % loss)
+        for _ in range(discriminator_training_time_per_epoch):
+            print('**************** Discriminator Epoch %d ****************' % (discriminator_epoch + 1))
+            print('learning rate: %f' % (discriminator_lr_scheduler.get_last_lr()[0]))
+            discriminator_train_one_epoch()
+            loss = discriminator_eval_one_epoch()
+            discriminator_lr_scheduler.step()
+            discriminator_epoch += 1
+            print('Discriminator mean eval loss: %.12f' % loss)
         if MULTIGPU is False:
             generator_save_dict = {
                 'epoch': epoch + 1,
