@@ -42,6 +42,7 @@ python test.py --cfg [Config File]
 ```
 
 - `[Config File]` is the path to the configuration file, default: `configs/default.yaml`.
+- For our provided dataset, we provide our own criterion that measures the accuracy of different classes, which is implemented in `utils/criterion.py`. For other dataset, we only provide the original loss criterion.
 
 ## To-dos
 
