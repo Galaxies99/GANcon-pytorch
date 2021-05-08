@@ -69,7 +69,7 @@ Yang, Hang, et al. "GANcon: protein contact map prediction with deep generative 
 }
 
 @misc{fang2021gancon,
-  author =       {Hongjie Fang},
+  author =       {Hongjie Fang, Zhanda Zhu, Peishen Yan and Hao Yin},
   title =        {GANcon re-implementation in PyTorch},
   howpublished = {\url{https://github.com/Galaxies99/GANcon-pytorch}},
   year =         {2021}
