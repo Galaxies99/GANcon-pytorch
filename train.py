@@ -13,7 +13,7 @@ from utils.loss import GeneratorLoss, DiscriminatorLoss
 from torch.optim.lr_scheduler import MultiStepLR
 from dataset import ProteinDataset, collate_fn
 from models.GANcon import ContactMapGenerator, ContactMapDiscriminator
-torch.autograd.set_detect_anomaly(True)
+
 # Parse Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--cfg', default = os.path.join('configs', 'default.yaml'), help = 'Config File', type = str)
@@ -28,8 +28,10 @@ MAX_EPOCH = cfg_dict.get('max_epoch', 30)
 CHECKPOINT_DIR = cfg_dict.get('checkpoint_dir', 'checkpoint')
 GENERATOR = cfg_dict.get('generator', {})
 DISCRIMINATOR = cfg_dict.get('discriminator', {})
+TRAINING_CFG = cfg_dict.get('training', {})
 LOSS = cfg_dict.get('loss', {})
 GENERATOR_BATCH_SIZE = GENERATOR.get('batch_size', 1)
+CLASS_NUMBER = GENERATOR.get('output_channel', 10)
 
 # Load data & Build dataset
 TRAIN_DIR = os.path.join('data', 'train')
@@ -90,7 +92,7 @@ if os.path.isfile(generator_checkpoint_file) and os.path.isfile(discriminator_ch
     discriminator_optimizer.load_state_dict(discriminator_checkpoint['optimizer_state_dict'])
     D_epoch = discriminator_checkpoint['epoch']
     discriminator_lr_scheduler.load_state_dict(discriminator_checkpoint['scheduler'])
-    print("Load checkpoint {} (epoch {})".format(discriminator_checkpoint, D_epoch))
+    print("Load checkpoint {} (epoch {})".format(discriminator_checkpoint_file, D_epoch))
     assert G_epoch == D_epoch
     start_epoch = G_epoch
 
@@ -161,7 +163,7 @@ def discriminator_train_one_epoch():
         feature = feature.to(device)
         label = label.to(device)
         mask = mask.to(device)
-        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2).type(torch.float)
+        real_label = F.one_hot(label, num_classes = CLASS_NUMBER).permute(0, 3, 1, 2).type(torch.float)
         with torch.no_grad():
             fake_label = generator(feature).detach()
         real_result = discriminator(feature, real_label)
@@ -185,7 +187,7 @@ def discriminator_eval_one_epoch():
         feature = feature.to(device)
         label = label.to(device)
         mask = mask.to(device)
-        real_label = F.one_hot(label, num_classes = 10).permute(0, 3, 1, 2).type(torch.float)
+        real_label = F.one_hot(label, num_classes = CLASS_NUMBER).permute(0, 3, 1, 2).type(torch.float)
         with torch.no_grad():
             fake_label = generator(feature).detach()
             real_result = discriminator(feature, real_label)
@@ -268,4 +270,4 @@ def train(start_epoch, args = {}):
 
 
 if __name__ == '__main__':
-    train(start_epoch)
+    train(start_epoch, TRAINING_CFG)

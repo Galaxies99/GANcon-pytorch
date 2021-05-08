@@ -31,6 +31,7 @@ GENERATOR = cfg_dict.get('generator', {})
 DISCRIMINATOR = cfg_dict.get('discriminator', {})
 LOSS = cfg_dict.get('loss', {})
 GENERATOR_BATCH_SIZE = GENERATOR.get('batch_size', 1)
+CLASS_NUMBER = GENERATOR.get('output_channel', 10)
 
 # Load data & Build dataset
 TEST_DIR = os.path.join('data', 'test')
@@ -87,7 +88,8 @@ def generator_test_one_epoch():
     discriminator.eval()
     mean_loss = 0
     count = 0
-    acc = np.zeros((2, 4))
+    if CLASS_NUMBER == 10:
+        acc = np.zeros((2, 4))
     for idx, data in enumerate(test_dataloader):
         feature, label, mask = data
         feature = feature.to(device)
@@ -102,12 +104,19 @@ def generator_test_one_epoch():
         print('--------------- Generator Eval Batch %d ---------------' % (idx + 1))
         print('loss: %.12f' % loss.item())
         print('acc: ', acc_batch)
-        acc += acc_batch * batch_size
-        mean_loss += loss.item() * batch_size
-        count += batch_size
+        if CLASS_NUMBER == 10:
+            acc += acc_batch * batch_size
+            mean_loss += loss.item() * batch_size
+            count += batch_size
+        else:
+            mean_loss += loss.item()
+            count += 1
     mean_loss = mean_loss / count
-    acc = acc / count
-    return mean_loss, acc
+    if CLASS_NUMBER == 10:
+        acc = acc / count
+        return mean_loss, acc
+    else:
+        return mean_loss
 
 
 if __name__ == '__main__':

@@ -46,12 +46,13 @@ class MaskedFocalLoss(nn.Module):
 
 
 class MaskedMSELoss(nn.Module):
-    def __init__(self):
+    def __init__(self, classes = 10):
         super(MaskedMSELoss, self).__init__()
         self.mse = nn.MSELoss(reduction='none')
+        self.classes = classes
 
     def forward(self, res, gt, mask):
-        loss = self.mse(res, F.one_hot(gt, num_classes = 10).permute(0, 3, 1, 2).type(torch.float))
+        loss = self.mse(res, F.one_hot(gt, num_classes = self.classes).permute(0, 3, 1, 2).type(torch.float))
         loss = loss * mask
         sample_loss = loss.sum(dim = [1, 2]) / mask.sum(dim = [1, 2])
         mean_batch_loss = torch.mean(sample_loss)

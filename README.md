@@ -1,6 +1,54 @@
-# GANcon
+# GANcon-pytorch
 
-PyTorch re-implementation of IEEE Access 8 (2020) paper: GANcon: protein contact map prediction with deep generative adversarial network
+PyTorch re-implementation of IEEE Access 8 (2020) paper: GANcon: protein contact map prediction with deep generative adversarial network.
+
+## Requirements
+
+Here are the recommended environment settings of this repository.
+
+- Python >= 3.7.9
+- PyTorch >= 1.7.1
+- Numpy >= 1.19.2
+- tqdm
+
+## Datasets
+
+In this repository, we only provide the dataset with input feature of size `L * L * 441`, where 441 is the feature channels, and ground-truth labels of size `L * L * 10`, where 10 is the output classes, because we have further divided the distance between amino acids into 10 classes and form a multi-categorical classification problem, instead of the tradition binary classification problem.
+
+If you want to use other datasets, you may need to write `dataset.py` by yourself. Or you can create an issue, and we will implement the dataset you provided when the maintainers are free.
+
+If you are using datasets that have not been divided into training set, validation set and testing set yet, you can use our tools to preprocess the dataset. See [docs/preprocessing.md](docs/preprocessing.md)
+
+## Configurations
+
+To train or test the model, you need to create a configuration file in yaml format. We have provided an example configuration file, see `configs/default.yaml`. To customize the configuration file, see [docs/configs.md](docs/configs.md) for details.
+
+## Training
+
+Simply executing the following commands.
+
+```bash
+python train.py --cfg [Config File]
+```
+
+- `[Config File]` is the path to the configuration file, default: `configs/default.yaml`.
+
+## Testing
+
+Simply executing the following commands.
+
+```bash
+python test.py --cfg [Config File]
+```
+
+- `[Config File]` is the path to the configuration file, default: `configs/default.yaml`.
+
+## To-dos
+
+- [ ] Pretrain models
+- [ ] Dataset downloading
+- [ ] Other dataset supporting
+- [ ] Demo presentation
 
 ## References
 
