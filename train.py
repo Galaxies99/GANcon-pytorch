@@ -168,8 +168,8 @@ def discriminator_train_one_epoch():
             fake_label = generator(feature).detach()
         real_result = discriminator(feature, real_label)
         fake_result = discriminator(feature, fake_label)
-        real_loss = discriminator_criterion(real_result, torch.ones(real_result.shape), mask)
-        fake_loss = discriminator_criterion(fake_result, torch.zeros(fake_result.shape), mask)
+        real_loss = discriminator_criterion(real_result, torch.ones(real_result.shape).to(device), mask)
+        fake_loss = discriminator_criterion(fake_result, torch.zeros(fake_result.shape).to(device), mask)
         loss = (real_loss + fake_loss) / 2.0
         loss.backward()
         discriminator_optimizer.step()
@@ -193,8 +193,8 @@ def discriminator_eval_one_epoch():
             real_result = discriminator(feature, real_label)
             fake_result = discriminator(feature, fake_label)
         with torch.no_grad():
-            real_loss = discriminator_criterion(real_result, torch.ones(real_result.shape), mask)
-            fake_loss = discriminator_criterion(fake_result, torch.zeros(fake_result.shape), mask)
+            real_loss = discriminator_criterion(real_result, torch.ones(real_result.shape).to(device), mask)
+            fake_loss = discriminator_criterion(fake_result, torch.zeros(fake_result.shape).to(device), mask)
             loss = (real_loss + fake_loss) / 2.0
         print('--------------- Discriminator Eval Batch %d ---------------' % (idx + 1))
         print('loss: %.12f' % loss.item())
