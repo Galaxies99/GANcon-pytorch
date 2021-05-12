@@ -65,7 +65,8 @@ LOSS_ALPHA = LOSS.get('alpha', [0.25, 0.25, 0.25, 0.25, 0.75, 0.75, 0.75, 0.75, 
 LOSS_BETA = LOSS.get('beta', 1.0)
 LOSS_GAMMA = LOSS.get('gamma', 2.0)
 LOSS_LAMBDA = LOSS.get('lambda', 1.0)
-generator_criterion = GeneratorLoss(alpha_ = LOSS_ALPHA, beta_ = LOSS_BETA, gamma_ = LOSS_GAMMA, lambda_ = LOSS_LAMBDA)
+LOSS_EPS = LOSS.get('eps', 1e-6)
+generator_criterion = GeneratorLoss(alpha_ = LOSS_ALPHA, beta_ = LOSS_BETA, gamma_ = LOSS_GAMMA, lambda_ = LOSS_LAMBDA, eps_ = LOSS_EPS)
 discriminator_criterion = DiscriminatorLoss()
 
 # Define Scheduler

@@ -24,6 +24,7 @@ loss:
   beta: 1.0
   gamma: 2.0
   lambda: 1.0
+  eps: 0.000001
 training:
   G_training_times: 1
   D_training_times: 3

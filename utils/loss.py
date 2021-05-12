@@ -25,14 +25,15 @@ class MaskedCrossEntropyLoss(nn.Module):
 
 
 class MaskedFocalLoss(nn.Module):
-    def __init__(self, alpha, gamma = 2.0):
+    def __init__(self, alpha, gamma = 2.0, eps = 1e-6):
         super(MaskedFocalLoss, self).__init__()
         self.alpha = torch.from_numpy(np.array(alpha))
         self.gamma = gamma
+        self.eps = eps
         self.cross_entropy = nn.NLLLoss(reduction = 'none')
         
     def forward(self, res, gt, mask):
-        res = torch.log(res)
+        res = torch.log(res + self.eps)
         alpha = self.alpha.to(res.device)
         loss = self.cross_entropy(res, gt.long())
         pt = torch.exp(- loss)
@@ -60,10 +61,10 @@ class MaskedMSELoss(nn.Module):
 
 
 class MaskedSFLoss(nn.Module):
-    def __init__(self, alpha, beta = 1.0, gamma = 2.0):
+    def __init__(self, alpha, beta = 1.0, gamma = 2.0, eps = 1e-6):
         super(MaskedSFLoss, self).__init__()
         self.beta = beta
-        self.focal = MaskedFocalLoss(alpha, gamma)
+        self.focal = MaskedFocalLoss(alpha, gamma, eps)
         self.mse = MaskedMSELoss()
     
     def forward(self, res, gt, mask):
@@ -87,11 +88,11 @@ class DiscriminateLoss(nn.Module):
 
 
 class GeneratorLoss(nn.Module):
-    def __init__(self, alpha_, beta_ = 1.0, gamma_ = 2.0, lambda_ = 1.0):
+    def __init__(self, alpha_, beta_ = 1.0, gamma_ = 2.0, lambda_ = 1.0, eps_ = 1e-6):
         super(GeneratorLoss, self).__init__()
         self.lambda_ = lambda_
         self.discriminate_loss = DiscriminateLoss()
-        self.sf_loss = MaskedSFLoss(alpha_, beta_, gamma_)
+        self.sf_loss = MaskedSFLoss(alpha_, beta_, gamma_, eps_)
     
     def forward(self, prediction, res, gt, mask):
         loss1 = self.discriminate_loss(prediction, mask)
