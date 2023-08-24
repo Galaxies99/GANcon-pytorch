@@ -1,6 +1,6 @@
 # GANcon-pytorch
 
-**[Note]**. This is a personal reimplementation of the GANcon paper (GANcon: protein contact map prediction with deep generative adversarial network) on a _third-party_ dataset. This repository was one of the course projects and the dataset was provided by the course instructor. If you encounter any problems (especially about the data, the checkpoint, and issues about the paper), I will suggest to ask the original authors for help.
+****[Note]**. This is a _personal_ reimplementation of the GANcon paper (GANcon: protein contact map prediction with deep generative adversarial network) on a _third-party_ dataset. This repository was one of the course projects and the dataset was provided by the course instructor, so I have no permission to distribute the data. If you encounter any problems (especially with the original data, the original checkpoint, and issues with the original paper), I would suggest asking the original authors for help.**
 
 ## Requirements
 
